@@ -156,14 +156,13 @@ class Text2GraphConverter:
         try:
             x = torch.stack(nodes)
         except Exception as e:
-            logger.info(text)
             logger.info(ginza_meaningful_token_2_order)
-        y = torch.tensor([_class], dtype=torch.long)
+        # y = torch.tensor([_class], dtype=torch.long)
 
         # self.nlp.display_dependencies(text=text)
         # self.nlp.display_meaningful_token_dependencies(text=text)
 
-        return Data(x=x, edge_index=edge_index, y=y)
+        return Data(x=x, edge_index=edge_index)
 
     def bulk_text_2_graph(
         self,
@@ -188,7 +187,11 @@ class Text2GraphConverter:
 
             self.save_graphs(graphs=graphs, graph_file_name=graph_file_name)
 
-        return DataLoader(graphs, batch_size=batch_size) if as_data_loader else graphs
+        return (
+            DataLoader(graphs, batch_size=batch_size, shuffle=True)
+            if as_data_loader
+            else graphs
+        )
 
     def load_graphs(
         self, graph_file_name: str = f"{os.path.dirname(__file__)}/../graphs/graph.pth"

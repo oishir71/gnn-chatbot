@@ -2,6 +2,7 @@ import os
 import csv
 from typing import List
 import torch
+import torch.nn.functional as F
 
 # Logging
 import logging
@@ -30,6 +31,10 @@ class ModelRunner:
             self.model.parameters(), lr=learning_rate, weight_decay=weight_decay
         )
         self.criterion = torch.nn.CrossEntropyLoss()
+
+        logger.info(f"Device: {self.device}")
+        logger.info(f"Learning rate: {learning_rate}")
+        logger.info(f"Weight decay: {weight_decay}")
 
     def train(self, data_loader):
         number_of_corrects = 0
@@ -76,6 +81,13 @@ class ModelRunner:
             number_of_corrects += int((predict_y == data.y).sum().item())
 
         return number_of_corrects / len(data_loader.dataset)
+
+    def inference(self, data):
+        self.model.eval()
+        data = data.to(self.device)
+        predicted_probabilities = self.model(data)
+        predicted_probabilities = F.softmax(predicted_probabilities, dim=1)
+        return predicted_probabilities
 
     def save_history_as_csv(
         self,

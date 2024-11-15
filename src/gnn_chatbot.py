@@ -62,11 +62,13 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
-    "--hidden_channels",
-    dest="hidden_channels",
-    action="store",
-    default=16,
-    type=int,
+    "--hidden_channels", dest="hidden_channels", action="store", default=16, type=int
+)
+parser.add_argument(
+    "--learning_rate", dest="learning_rate", action="store", default=1e-3, type=float
+)
+parser.add_argument(
+    "--weight_decay", dest="weight_decay", action="store", default=1e-2, type=float
 )
 parser.add_argument(
     "--epochs",
@@ -108,7 +110,7 @@ if __name__ == "__main__":
     number_of_unique_classes = data_parser.get_number_of_unique_classes()
 
     ###############################################
-    # データのロード
+    # データの変換
     ###############################################
     converter = Text2GraphConverter(
         nlp_model=args.nlp_model,
@@ -164,7 +166,9 @@ if __name__ == "__main__":
     ###############################################
     history_file_name = f"{os.path.dirname(__file__)}/../histories/histories.csv"
     weight_file_name = f"{os.path.dirname(__file__)}/../weights/model_weight.pth"
-    runner = ModelRunner(model=gcn, learning_rate=1e-3, weight_decay=1e-2)
+    runner = ModelRunner(
+        model=gcn, learning_rate=args.learning_rate, weight_decay=args.weight_decay
+    )
     runner.execute(
         epochs=args.epochs,
         train_data_loader=train_graph_loader,

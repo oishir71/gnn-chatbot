@@ -37,6 +37,7 @@ class TrainValidateTestDataParser:
         self.test_data_file_paths = test_data_file_paths
 
         self.label_2_class = {}
+        self.label_2_texts = {}
         self.class_2_label = {}
         self.number_of_classes = 0
 
@@ -46,10 +47,24 @@ class TrainValidateTestDataParser:
             self.label_2_class[label] = _class
         return self.label_2_class[label]
 
+    def set_label_2_texts(self, label, text: str):
+        if not label in self.label_2_texts:
+            self.label_2_texts[label] = []
+        self.label_2_texts[label].append(text)
+
+    def get_texts_by_class(self, _class: int):
+        label = self.get_label_by_class(_class=_class)
+        try:
+            texts = self.label_2_texts[label]
+            return texts
+        except Exception as e:
+            logger.error(f"{_class} was not found. {e}")
+            raise
+
     def get_label_by_class(self, _class: int):
         if not _class in self.class_2_label:
             self.class_2_label = {
-                value: key for key, value in self.label_2_class.item()
+                value: key for key, value in self.label_2_class.items()
             }
         try:
             label = self.class_2_label[_class]
@@ -76,7 +91,7 @@ class TrainValidateTestDataParser:
         text = re.sub(r"\s+", "", text)
         return text
 
-    def _load_data(self, file_paths: List[str]):
+    def _load_data(self, file_paths: List[str], add_new_class: bool = True):
         texts_already_taken_into_account = []
         texts, classes = [], []
 
@@ -100,26 +115,43 @@ class TrainValidateTestDataParser:
                             row=row, possible_column_names=label_column_name_candidates
                         )
                     if not row[text_column_name] in texts_already_taken_into_account:
-                        texts_already_taken_into_account.append(row[text_column_name])
-                        texts.append(self._text_cosmetics(text=row[text_column_name]))
-                        classes.append(
-                            self.get_class_by_label(label=row[label_column_name])
-                        )
+                        if (
+                            add_new_class
+                            or row[label_column_name] in self.label_2_class
+                        ):
+                            texts_already_taken_into_account.append(
+                                row[text_column_name]
+                            )
+                            self.set_label_2_texts(
+                                label=row[label_column_name], text=row[text_column_name]
+                            )
+                            texts.append(
+                                self._text_cosmetics(text=row[text_column_name])
+                            )
+                            classes.append(
+                                self.get_class_by_label(label=row[label_column_name])
+                            )
 
         logger.info(f"{len(texts)} data was loader.")
         return texts, classes
 
     def load_train_data(self):
         logger.info("Load train data")
-        return self._load_data(file_paths=self.train_data_file_paths)
+        return self._load_data(
+            file_paths=self.train_data_file_paths, add_new_class=True
+        )
 
     def load_validate_data(self):
         logger.info("Load validate data")
-        return self._load_data(file_paths=self.validate_data_file_paths)
+        return self._load_data(
+            file_paths=self.validate_data_file_paths, add_new_class=False
+        )
 
     def load_test_data(self):
         logger.info("Load test data")
-        return self._load_data(file_paths=self.test_data_file_paths)
+        return self._load_data(
+            file_paths=self.test_data_file_paths, add_new_class=False
+        )
 
     def get_number_of_unique_classes(self):
         return len(self.label_2_class)
